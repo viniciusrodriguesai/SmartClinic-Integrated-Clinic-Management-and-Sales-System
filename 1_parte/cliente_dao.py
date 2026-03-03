@@ -1,60 +1,82 @@
-from db import conectar
-import mysql.connector
-def inserir_cliente(nome, cpf, telefone, email, data_nascimento):
-    conn = conectar()
-    cursor = conn.cursor()
+from __future__ import annotations
 
-    sql = """
-    INSERT INTO cliente (nome, cpf, telefone, email, data_nascimento)
-    VALUES (%s, %s, %s, %s, %s)
+from dataclasses import dataclass
+from typing import List, Optional, Tuple
+from mysql.connector import Error
+from db import get_conn
+
+@dataclass(frozen=True)
+class Cliente:
+    id_cliente: int
+    nome: str
+    cpf: str
+    telefone: Optional[str]
+    email: str
+    data_nascimento: Optional[str]  # formato "YYYY-MM-DD"
+
+
+class ClienteDAO:
     """
-    valores = (nome, cpf, telefone, email, data_nascimento)
-
-    cursor.execute(sql, valores)
-    conn.commit()
-
-    cursor.close()
-    conn.close()
-
-
-def alterar_cliente(id_cliente, nome, cpf, telefone, email, data_nascimento):
-    conn = conectar()
-    cursor = conn.cursor()
-
-    sql = """
-    UPDATE cliente
-    SET nome = %s,
-        cpf = %s,
-        telefone = %s,
-        email = %s,
-        data_nascimento = %s
-    WHERE id_cliente = %s
+    Camada de acesso a dados (DAO) para a tabela cliente.
     """
-    valores = (nome, cpf, telefone, email, data_nascimento, id_cliente)
 
-    cursor.execute(sql, valores)
-    conn.commit()
+    @staticmethod
+    def inserir(nome: str, cpf: str, telefone: Optional[str], email: str, data_nascimento: Optional[str]) -> int:
+        sql = """
+        INSERT INTO cliente (nome, cpf, telefone, email, data_nascimento)
+        VALUES (%s, %s, %s, %s, %s)
+        """
 
-    cursor.close()
-    conn.close()
+        with get_conn() as conn:
+            try:
+                cursor = conn.cursor()
+                cursor.execute(sql, (nome, cpf, telefone, email, data_nascimento))
+                conn.commit()
+                return int(cursor.lastrowid)
+            except Error as e:
+                conn.rollback()
+                raise RuntimeError(f"Erro ao inserir cliente: {e}") from e
+            finally:
+                cursor.close()
 
+    @staticmethod
+    def alterar(id_cliente: int,nome: str,cpf: str,telefone: Optional[str],email: str,data_nascimento: Optional[str],) -> int:
+        sql = """
+        UPDATE cliente
+        SET nome = %s,
+            cpf = %s,
+            telefone = %s,
+            email = %s,
+            data_nascimento = %s
+        WHERE id_cliente = %s
+        """
 
-def pesquisar_cliente_por_nome(parte_nome):
-    conn = conectar()
-    cursor = conn.cursor()
+        with get_conn() as conn:
+            try:
+                cursor = conn.cursor()
+                cursor.execute(sql, (nome, cpf, telefone, email, data_nascimento, id_cliente))
+                conn.commit()
+                return int(cursor.rowcount)  # quantas linhas foram alteradas
+            except Error as e:
+                conn.rollback()
+                raise RuntimeError(f"Erro ao alterar cliente: {e}") from e
+            finally:
+                cursor.close()
 
-    sql = """
-    SELECT id_cliente, nome, cpf, telefone, email, data_nascimento
-    FROM cliente
-    WHERE nome LIKE %s
-    ORDER BY nome
-    """
-    valores = ("%" + parte_nome + "%",)
+    @staticmethod
+    def pesquisar_por_nome(parte_nome: str) -> List[Cliente] | None:
+        sql = """
+        SELECT id_cliente, nome, cpf, telefone, email, data_nascimento
+        FROM cliente
+        WHERE nome LIKE %s
+        ORDER BY nome
+        """
 
-    cursor.execute(sql, valores)
-    resultados = cursor.fetchall()
-
-    cursor.close()
-    conn.close()
-
-    return resultados
+        with get_conn() as conn:
+            cursor = conn.cursor()
+            try:
+                cursor.execute(sql, (f"%{parte_nome}%",))
+                rows = cursor.fetchall()
+                return [Cliente(*row) for row in rows]
+            finally:
+                cursor.close()
