@@ -209,4 +209,5 @@ __marimo__/
 venv/
 .venv/
 __pycache__/
+secreto.env
 *.pyc
