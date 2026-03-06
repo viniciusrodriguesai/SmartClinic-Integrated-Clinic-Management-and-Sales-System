@@ -5,7 +5,7 @@ from typing import List, Optional, Tuple
 
 from mysql.connector import Error
 
-from db import get_conn
+from db import conectar, get_conn
 
 
 @dataclass(frozen=True)
@@ -30,7 +30,7 @@ class ClienteDAO:
         VALUES (%s, %s, %s, %s, %s)
         """
 
-        with get_conn() as conn:
+        conn = conectar()
             try:
                 cursor = conn.cursor()
                 cursor.execute(sql, (nome, cpf, telefone, email, data_nascimento))
