@@ -13,14 +13,6 @@ def menu():
     print("6 - Exibir um cliente")
     print("0 - Sair")
 
-def ler_dados_cliente() -> dict:
-    return {
-        "nome": input("Nome: "),
-        "cpf": input("CPF: "),
-        "telefone": input("Telefone: "),
-        "email": input("Email: "),
-        "data_nascimento": input("Data de nascimento (YYYY-MM-DD): ")
-    }
 
 def main():
 
@@ -33,18 +25,30 @@ def main():
         try:
 
             if opcao == "1":
-                dados = ler_dados_cliente()
 
-                id_cliente = ClienteDAO.inserir(**dados)
-                
+                nome = input("Nome: ")
+                cpf = input("CPF: ")
+                telefone = input("Telefone: ")
+                email = input("Email: ")
+                data = input("Data nascimento: ")
+
+                id_cliente = ClienteDAO.inserir(nome, cpf, telefone, email, data)
+
                 print("Cliente inserido com ID:", id_cliente)
 
             elif opcao == "2":
 
-                id_cliente = int(input("ID do cliente a alterar: "))
-                dados = ler_dados_cliente()
-                
-                linhas = ClienteDAO.alterar(id_cliente, **dados)
+                id_cliente = int(input("ID do cliente: "))
+                nome = input("Nome: ")
+                cpf = input("CPF: ")
+                telefone = input("Telefone: ")
+                email = input("Email: ")
+                data = input("Data nascimento: ")
+
+                linhas = ClienteDAO.alterar(
+                    id_cliente , nome, cpf, telefone, email, data
+                )
+
                 print("Clientes alterados:", linhas)
 
             elif opcao == "3":
@@ -83,9 +87,7 @@ def main():
 
                 print("Encerrando...")
                 break
-            
-            else:
-                print("Opção inválida. Tente novamente.")
+
         except Exception as e:
 
             print("Erro:", e)
