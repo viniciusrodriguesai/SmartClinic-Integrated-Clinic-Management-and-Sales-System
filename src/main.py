@@ -1,40 +1,96 @@
 from cliente_dao import ClienteDAO
 
 
+def menu():
+
+    print("\n===== SISTEMA DE CLIENTES =====")
+
+    print("1 - Inserir cliente")
+    print("2 - Alterar cliente")
+    print("3 - Pesquisar por nome")
+    print("4 - Remover cliente")
+    print("5 - Listar todos")
+    print("6 - Exibir um cliente")
+    print("0 - Sair")
+
+
 def main():
-    try:
-        print("=== TESTE DE INSERÇÃO ===")
-        novo_id = ClienteDAO.inserir(
-            nome="Ana Souza",
-            cpf="123.456.789-00",
-            telefone="83999999999",
-            email="ana@gmail.com",
-            data_nascimento="2004-10-15",
-        )
-        print(f"Cliente inserido com sucesso. ID: {novo_id}")
 
-        print("\n=== TESTE DE ALTERAÇÃO ===")
-        linhas_alteradas = ClienteDAO.alterar(
-            id_cliente=novo_id,
-            nome="Ana Silva",
-            cpf="123.456.789-00",
-            telefone="83988888888",
-            email="ana.silva@gmail.com",
-            data_nascimento="2004-10-15",
-        )
-        print(f"Quantidade de linhas alteradas: {linhas_alteradas}")
+    while True:
 
-        print("\n=== TESTE DE PESQUISA POR NOME ===")
-        clientes = ClienteDAO.pesquisar_por_nome("Ana")
+        menu()
 
-        if not clientes:
-            print("Nenhum cliente encontrado.")
-        else:
-            for cliente in clientes:
+        opcao = input("Escolha uma opção: ")
+
+        try:
+
+            if opcao == "1":
+
+                nome = input("Nome: ")
+                cpf = input("CPF: ")
+                telefone = input("Telefone: ")
+                email = input("Email: ")
+                data = input("Data nascimento: ")
+
+                id_cliente = ClienteDAO.inserir(nome, cpf, telefone, email, data)
+
+                print("Cliente inserido com ID:", id_cliente)
+
+            elif opcao == "2":
+
+                id_cliente = int(input("ID do cliente: "))
+                nome = input("Nome: ")
+                cpf = input("CPF: ")
+                telefone = input("Telefone: ")
+                email = input("Email: ")
+                data = input("Data nascimento: ")
+
+                linhas = ClienteDAO.alterar(
+                    id_cliente, nome, cpf, telefone, email, data
+                )
+
+                print("Clientes alterados:", linhas)
+
+            elif opcao == "3":
+
+                nome = input("Parte do nome: ")
+
+                clientes = ClienteDAO.pesquisar_por_nome(nome)
+
+                for c in clientes:
+                    print(c)
+
+            elif opcao == "4":
+
+                id_cliente = int(input("ID do cliente: "))
+
+                linhas = ClienteDAO.remover(id_cliente)
+
+                print("Clientes removidos:", linhas)
+
+            elif opcao == "5":
+
+                clientes = ClienteDAO.listar_todos()
+
+                for c in clientes:
+                    print(c)
+
+            elif opcao == "6":
+
+                id_cliente = int(input("ID do cliente: "))
+
+                cliente = ClienteDAO.buscar_por_id(id_cliente)
+
                 print(cliente)
 
-    except Exception as e:
-        print(f"Ocorreu um erro: {e}")
+            elif opcao == "0":
+
+                print("Encerrando...")
+                break
+
+        except Exception as e:
+
+            print("Erro:", e)
 
 
 if __name__ == "__main__":
