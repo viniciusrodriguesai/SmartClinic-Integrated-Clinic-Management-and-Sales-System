@@ -13,6 +13,14 @@ def menu():
     print("6 - Exibir um cliente")
     print("0 - Sair")
 
+def ler_id_cliente() -> int | None:
+    valor = input("ID do cliente: ")
+
+    if not valor.isdigit():
+        print("Digite um ID numérico.")
+        return None
+
+    return int(valor)
 
 def main():
 
@@ -56,9 +64,11 @@ def main():
                 nome = input("Parte do nome: ")
 
                 clientes = ClienteDAO.pesquisar_por_nome(nome)
-
-                for c in clientes:
-                    print(c.id_cliente, c.nome, c.cpf, c.telefone, c.email, c.data_nascimento)
+                if not clientes:
+                    print("Nenhum cliente encontrado.")
+                else:
+                    for c in clientes:
+                        print(c)
 
             elif opcao == "4":
 
@@ -73,16 +83,17 @@ def main():
                 clientes = ClienteDAO.listar_todos()
 
                 for c in clientes:
-                    print(c.id_cliente, c.nome, c.cpf, c.telefone, c.email, c.data_nascimento)
+                    print(c)
 
             elif opcao == "6":
 
                 id_cliente = int(input("ID do cliente: "))
 
                 cliente = ClienteDAO.buscar_por_id(id_cliente)
-
-                print(cliente.id_cliente, cliente.nome, cliente.cpf, cliente.telefone, cliente.email, cliente.data_nascimento)
-
+                if cliente: 
+                    print(cliente)
+                else:
+                    print("Cliente não encontrado.")
             elif opcao == "0":
 
                 print("Encerrando...")
