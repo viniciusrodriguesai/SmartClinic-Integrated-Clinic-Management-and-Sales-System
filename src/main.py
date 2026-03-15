@@ -11,6 +11,7 @@ def menu():
     print("4 - Remover cliente")
     print("5 - Listar todos")
     print("6 - Exibir um cliente")
+    print("7 - Exibir Relatório")
     print("0 - Sair")
 
 def ler_id_cliente() -> int | None:
@@ -94,6 +95,14 @@ def main():
                     print(cliente)
                 else:
                     print("Cliente não encontrado.")
+            elif opcao == "7":
+
+                relatorio = ClienteDAO.gerar_relatorio()
+
+                print("\n===== RELATÓRIO DO SISTEMA =====")
+                print("Total de clientes:", relatorio["total_clientes"])
+                print("Clientes com telefone:", relatorio["clientes_com_telefone"])
+                print("Clientes com email:", relatorio["clientes_com_email"])
             elif opcao == "0":
 
                 print("Encerrando...")
