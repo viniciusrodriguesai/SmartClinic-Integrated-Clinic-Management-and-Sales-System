@@ -1,5 +1,5 @@
 from cliente_dao import ClienteDAO
-
+from time import sleep
 
 def menu():
 
