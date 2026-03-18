@@ -39,7 +39,7 @@ def main():
                 cpf = input("CPF: ")
                 telefone = input("Telefone: ")
                 email = input("Email: ")
-                data = input("Data nascimento: ")
+                data = input("Data nascimento(YYYY-MM-DD): ")
 
                 id_cliente = ClienteDAO.inserir(nome, cpf, telefone, email, data)
 
