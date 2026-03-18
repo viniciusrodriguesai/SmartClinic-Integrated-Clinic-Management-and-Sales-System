@@ -14,14 +14,6 @@ def menu():
     print("7 - Exibir Relatório")
     print("0 - Sair")
 
-def ler_id_cliente() -> int | None:
-    valor = input("ID do cliente: ")
-
-    if not valor.isdigit():
-        print("Digite um ID numérico.")
-        return None
-
-    return int(valor)
 
 def main():
 

@@ -40,8 +40,8 @@ class Application():
         #Criação do botão excluir
         self.bt_excluir = Button(self.frame_1, text="Excluir")
         self.bt_excluir.place(relx=0.8, rely=0.01, relwidth=0.1, relheight=0.15)
-        #Criação do label e entrada do codigo
-        self.lb_codigo = Label(self.frame_1, text="Código",)
+        #Criação do label e entrada do ID
+        self.lb_codigo = Label(self.frame_1, text="ID",)
         self.lb_codigo.place(relx=0.05, rely=0.35)
 
         self.codigo_entry = Entry(self.frame_1)
