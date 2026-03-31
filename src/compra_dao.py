@@ -1,243 +1,248 @@
-import json
 from dataclasses import dataclass
 from typing import List, Optional
+
 from mysql.connector import Error
 from db import get_conn
 
-
+"""Definindo o dataclass Cliente para representar os dados de um cliente, 
+com campos correspondentes às colunas da tabela cliente no banco de dados.
+Os campos cidade, torce_flamengo e assiste_one_piece foram adicionados na Parte 2
+para suporte às regras de desconto automático."""
 @dataclass(frozen=True)
-class ItemCompra:
-    id_item: int
-    id_compra: int
-    id_produto: int
-    nome_produto: str
-    quantidade: int
-    preco_unitario: float
+class Cliente:
+    id_cliente: int
+    nome: str
+    cpf: str
+    telefone: Optional[str]
+    email: str
+    data_nascimento: Optional[str]
+    cidade: Optional[str] = None
+    torce_flamengo: bool = False
+    assiste_one_piece: bool = False
 
     @property
-    def subtotal(self):
-        return self.quantidade * self.preco_unitario
+    def tem_desconto(self) -> bool:
+        """Retorna True se o cliente tiver direito a 10% de desconto:
+        torcedor do Flamengo, fã de One Piece ou morador de Sousa."""
+        return (
+            self.torce_flamengo or
+            self.assiste_one_piece or
+            (self.cidade or "").lower() == "sousa"
+        )
 
 
-@dataclass(frozen=True)
-class Compra:
-    id_compra: int
-    id_cliente: int
-    nome_cliente: str
-    id_vendedor: int
-    nome_vendedor: str
-    data_compra: str
-    forma_pagamento: str
-    status_pagamento: str
-    desconto_pct: float
-    valor_total: float
-
-
-class CompraDAO:
+"""Definindo a classe ClienteDAO para encapsular as operações de acesso a dados relacionadas aos clientes,
+com métodos estáticos para inserir, alterar, pesquisar, remover e listar clientes, bem como um método para gerar um relatório do sistema
+com base nos dados dos clientes"""
+class ClienteDAO:
 
     @staticmethod
-    def realizar(id_cliente: int, id_vendedor: int,
-                 forma_pagamento: str,
-                 itens: list) -> int:
+    def inserir(nome: str, cpf: str, telefone: Optional[str], email: str,
+                data_nascimento: Optional[str], cidade: Optional[str] = None,
+                torce_flamengo: bool = False, assiste_one_piece: bool = False) -> int:
+        sql = """
+        INSERT INTO cliente (nome, cpf, telefone, email, data_nascimento,
+                             cidade, torce_flamengo, assiste_one_piece)
+        VALUES (%s, %s, %s, %s, %s, %s, %s, %s)
         """
-        itens = [{"id_produto": 1, "quantidade": 2}, ...]
-        Regras:
-        - Desconto 10% se cliente torce pro Flamengo, assiste One Piece ou é de Sousa
-        - Bloqueia se qualquer produto sem estoque suficiente
-        - Status 'confirmado' para dinheiro, 'pendente' para outros
-        """
-        # Verifica desconto
         with get_conn() as conn:
-            cur = conn.cursor()
+            cursor = None
             try:
-                cur.execute(
-                    "SELECT torce_flamengo, assiste_one_piece, cidade FROM cliente WHERE id_cliente=%s",
-                    (id_cliente,)
-                )
-                row = cur.fetchone()
-                if not row:
-                    raise RuntimeError("Cliente não encontrado.")
-                torce, one_piece, cidade = row
-                desconto = 10.0 if (torce or one_piece or
-                                    (cidade and cidade.lower() == 'sousa')) else 0.0
-
-                # Verifica estoque
-                for item in itens:
-                    cur.execute("SELECT nome, quantidade FROM produto WHERE id_produto=%s",
-                                (item["id_produto"],))
-                    prod = cur.fetchone()
-                    if not prod:
-                        raise RuntimeError(f"Produto ID {item['id_produto']} não encontrado.")
-                    if prod[1] < item["quantidade"]:
-                        raise RuntimeError(
-                            f"Estoque insuficiente para '{prod[0]}'. "
-                            f"Disponível: {prod[1]}, solicitado: {item['quantidade']}."
-                        )
-
-                # Status
-                status = "confirmado" if forma_pagamento == "dinheiro" else "pendente"
-
-                # Cria compra
-                cur.execute(
-                    """INSERT INTO compra
-                       (id_cliente,id_vendedor,forma_pagamento,status_pagamento,desconto_pct,valor_total)
-                       VALUES (%s,%s,%s,%s,%s,0.00)""",
-                    (id_cliente, id_vendedor, forma_pagamento, status, desconto)
-                )
-                id_compra = cur.lastrowid
-
-                # Insere itens e abate estoque
-                total = 0.0
-                for item in itens:
-                    cur.execute("SELECT preco FROM produto WHERE id_produto=%s",
-                                (item["id_produto"],))
-                    preco = float(cur.fetchone()[0])
-                    subtotal = preco * item["quantidade"]
-                    total += subtotal
-                    cur.execute(
-                        "INSERT INTO item_compra (id_compra,id_produto,quantidade,preco_unitario) VALUES (%s,%s,%s,%s)",
-                        (id_compra, item["id_produto"], item["quantidade"], preco)
-                    )
-                    cur.execute(
-                        "UPDATE produto SET quantidade = quantidade - %s WHERE id_produto=%s",
-                        (item["quantidade"], item["id_produto"])
-                    )
-
-                # Aplica desconto
-                total_com_desconto = total * (1 - desconto / 100)
-                cur.execute("UPDATE compra SET valor_total=%s WHERE id_compra=%s",
-                            (total_com_desconto, id_compra))
-
+                cursor = conn.cursor()
+                cursor.execute(sql, (nome, cpf, telefone, email, data_nascimento,
+                                     cidade, int(torce_flamengo), int(assiste_one_piece)))
                 conn.commit()
-                return id_compra
+                return int(cursor.lastrowid)
 
             except Error as e:
                 conn.rollback()
-                raise RuntimeError(f"Erro ao realizar compra: {e}")
+                raise RuntimeError(f"Erro ao inserir cliente: {e}")
+
             finally:
-                cur.close()
+                if cursor:
+                    cursor.close()
 
     @staticmethod
-    def confirmar_pagamento(id_compra: int) -> int:
+    def alterar(id_cliente, nome, cpf, telefone, email, data_nascimento,
+                cidade=None, torce_flamengo=False, assiste_one_piece=False) -> int:
+        sql = """
+        UPDATE cliente
+        SET nome=%s, cpf=%s, telefone=%s, email=%s, data_nascimento=%s,
+            cidade=%s, torce_flamengo=%s, assiste_one_piece=%s
+        WHERE id_cliente=%s
+        """
         with get_conn() as conn:
-            cur = conn.cursor()
+            cursor = None
             try:
-                cur.execute(
-                    "UPDATE compra SET status_pagamento='confirmado' WHERE id_compra=%s",
-                    (id_compra,)
+                cursor = conn.cursor()
+                cursor.execute(
+                    sql,
+                    (nome, cpf, telefone, email, data_nascimento,
+                     cidade, int(torce_flamengo), int(assiste_one_piece), id_cliente),
                 )
-                conn.commit(); return int(cur.rowcount)
+                conn.commit()
+                return int(cursor.rowcount)
+
             except Error as e:
-                conn.rollback(); raise RuntimeError(f"Erro ao confirmar pagamento: {e}")
+                conn.rollback()
+                raise RuntimeError(f"Erro ao alterar cliente: {e}")
+
             finally:
-                cur.close()
+                if cursor:
+                    cursor.close()
 
     @staticmethod
-    def listar_todas() -> List[Compra]:
+    def pesquisar_por_nome(parte_nome: str) -> List[Cliente]:
         sql = """
-        SELECT c.id_compra, c.id_cliente, cl.nome, c.id_vendedor, v.nome,
-               c.data_compra, c.forma_pagamento, c.status_pagamento,
-               c.desconto_pct, c.valor_total
-        FROM compra c
-        JOIN cliente cl ON cl.id_cliente = c.id_cliente
-        JOIN vendedor v  ON v.id_vendedor  = c.id_vendedor
-        ORDER BY c.data_compra DESC
+        SELECT id_cliente, nome, cpf, telefone, email, data_nascimento,
+               IFNULL(cidade, NULL),
+               IFNULL(torce_flamengo, 0),
+               IFNULL(assiste_one_piece, 0)
+        FROM cliente
+        WHERE nome LIKE %s
+        ORDER BY nome
         """
         with get_conn() as conn:
-            cur = conn.cursor()
+            cursor = None
             try:
-                cur.execute(sql)
-                return [Compra(r[0],r[1],r[2],r[3],r[4],
-                               str(r[5]),r[6],r[7],float(r[8]),float(r[9]))
-                        for r in cur.fetchall()]
+                cursor = conn.cursor()
+                cursor.execute(sql, (f"%{parte_nome}%",))
+
+                resultados = cursor.fetchall()
+                # Convertendo os resultados em objetos Cliente,
+                # garantindo os tipos corretos para os campos booleanos
+                return [
+                    Cliente(r[0], r[1], r[2], r[3], r[4],
+                            str(r[5]) if r[5] else None,
+                            r[6], bool(r[7]), bool(r[8]))
+                    for r in resultados
+                ]
+
             except Error as e:
-                raise RuntimeError(f"Erro ao listar compras: {e}")
+                raise RuntimeError(f"Erro ao pesquisar cliente: {e}")
+
             finally:
-                cur.close()
+                if cursor:
+                    cursor.close()
 
     @staticmethod
-    def listar_por_cliente(id_cliente: int) -> List[Compra]:
+    def remover(id_cliente: int) -> int:
         sql = """
-        SELECT c.id_compra, c.id_cliente, cl.nome, c.id_vendedor, v.nome,
-               c.data_compra, c.forma_pagamento, c.status_pagamento,
-               c.desconto_pct, c.valor_total
-        FROM compra c
-        JOIN cliente cl ON cl.id_cliente = c.id_cliente
-        JOIN vendedor v  ON v.id_vendedor  = c.id_vendedor
-        WHERE c.id_cliente = %s
-        ORDER BY c.data_compra DESC
+        DELETE FROM cliente
+        WHERE id_cliente = %s
         """
         with get_conn() as conn:
-            cur = conn.cursor()
+            cursor = None
             try:
-                cur.execute(sql, (id_cliente,))
-                return [Compra(r[0],r[1],r[2],r[3],r[4],
-                               str(r[5]),r[6],r[7],float(r[8]),float(r[9]))
-                        for r in cur.fetchall()]
+                cursor = conn.cursor()
+                cursor.execute(sql, (id_cliente,))
+                conn.commit()
+                return int(cursor.rowcount)
+
             except Error as e:
-                raise RuntimeError(f"Erro ao listar compras do cliente: {e}")
+                conn.rollback()
+                raise RuntimeError(f"Erro ao remover cliente: {e}")
+
             finally:
-                cur.close()
+                if cursor:
+                    cursor.close()
 
     @staticmethod
-    def buscar_itens(id_compra: int) -> List[ItemCompra]:
+    def listar_todos() -> List[Cliente]:
         sql = """
-        SELECT ic.id_item, ic.id_compra, ic.id_produto, p.nome,
-               ic.quantidade, ic.preco_unitario
-        FROM item_compra ic
-        JOIN produto p ON p.id_produto = ic.id_produto
-        WHERE ic.id_compra = %s
+        SELECT id_cliente, nome, cpf, telefone, email, data_nascimento,
+               IFNULL(cidade, NULL),
+               IFNULL(torce_flamengo, 0),
+               IFNULL(assiste_one_piece, 0)
+        FROM cliente
+        ORDER BY nome
         """
         with get_conn() as conn:
-            cur = conn.cursor()
+            cursor = None
             try:
-                cur.execute(sql, (id_compra,))
-                return [ItemCompra(r[0],r[1],r[2],r[3],r[4],float(r[5]))
-                        for r in cur.fetchall()]
+                cursor = conn.cursor()
+                cursor.execute(sql)
+                resultados = cursor.fetchall()
+                return [
+                    Cliente(r[0], r[1], r[2], r[3], r[4],
+                            str(r[5]) if r[5] else None,
+                            r[6], bool(r[7]), bool(r[8]))
+                    for r in resultados
+                ]
+
             except Error as e:
-                raise RuntimeError(f"Erro ao buscar itens: {e}")
+                raise RuntimeError(f"Erro ao listar clientes: {e}")
+
             finally:
-                cur.close()
+                if cursor:
+                    cursor.close()
 
     @staticmethod
-    def relatorio_mensal(ano: int, mes: int) -> List[dict]:
-        """Usa a view vw_relatorio_mensal."""
-        sql = """SELECT vendedor, total_vendas, faturamento, ticket_medio
-                 FROM vw_relatorio_mensal WHERE ano=%s AND mes=%s"""
+    def buscar_por_id(id_cliente: int) -> Optional[Cliente]:
+        sql = """
+        SELECT id_cliente, nome, cpf, telefone, email, data_nascimento,
+               IFNULL(cidade, NULL),
+               IFNULL(torce_flamengo, 0),
+               IFNULL(assiste_one_piece, 0)
+        FROM cliente
+        WHERE id_cliente = %s
+        """
         with get_conn() as conn:
-            cur = conn.cursor()
+            cursor = None
             try:
-                cur.execute(sql, (ano, mes))
-                return [{"vendedor": r[0], "total_vendas": r[1],
-                         "faturamento": float(r[2]), "ticket_medio": float(r[3])}
-                        for r in cur.fetchall()]
-            except Error as e:
-                raise RuntimeError(f"Erro no relatório mensal: {e}")
-            finally:
-                cur.close()
+                cursor = conn.cursor()
+                cursor.execute(sql, (id_cliente,))
+                resultado = cursor.fetchone()
 
+                """Verificando se a consulta retornou um resultado e, em caso afirmativo, 
+                criando um objeto Cliente a partir dos dados retornados."""
+                if resultado:
+                    return Cliente(resultado[0], resultado[1], resultado[2],
+                                   resultado[3], resultado[4],
+                                   str(resultado[5]) if resultado[5] else None,
+                                   resultado[6], bool(resultado[7]), bool(resultado[8]))
+
+                return None
+
+            except Error as e:
+                raise RuntimeError(f"Erro ao buscar cliente: {e}")
+
+            finally:
+                if cursor:
+                    cursor.close()
+
+    # Gerar relatório do sistema com totais de clientes e contagem por perfil
     @staticmethod
-    def gerar_relatorio_geral() -> dict:
-        sql = """SELECT COUNT(*), SUM(valor_total),
-                        SUM(status_pagamento='confirmado'),
-                        SUM(status_pagamento='pendente'),
-                        AVG(valor_total)
-                 FROM compra"""
+    def gerar_relatorio() -> dict:
+        sql = """
+        SELECT
+            COUNT(*)                                        AS total_clientes,
+            COUNT(telefone)                                 AS total_com_telefone,
+            COUNT(email)                                    AS total_com_email,
+            IFNULL(SUM(torce_flamengo), 0)                 AS torcem_flamengo,
+            IFNULL(SUM(assiste_one_piece), 0)              AS assistem_one_piece,
+            IFNULL(SUM(LOWER(IFNULL(cidade,''))='sousa'),0) AS de_sousa
+        FROM cliente
+        """
         with get_conn() as conn:
-            cur = conn.cursor()
+            cursor = None
             try:
-                cur.execute(sql)
-                r = cur.fetchone()
+                cursor = conn.cursor()
+                cursor.execute(sql)
+                resultado = cursor.fetchone()
+
                 return {
-                    "total_compras":     r[0] or 0,
-                    "faturamento_total": float(r[1] or 0),
-                    "confirmadas":       r[2] or 0,
-                    "pendentes":         r[3] or 0,
-                    "ticket_medio":      float(r[4] or 0),
+                    "total_clientes":        resultado[0],
+                    "clientes_com_telefone": resultado[1],
+                    "clientes_com_email":    resultado[2],
+                    "torcem_flamengo":       resultado[3],
+                    "assistem_one_piece":    resultado[4],
+                    "de_sousa":              resultado[5],
                 }
-            except Error as e:
-                raise RuntimeError(f"Erro no relatório: {e}")
-            finally:
-                cur.close()
-                #Fechando cursor no finally para garantir que ele seja fechado mesmo em caso de erro.
 
+            except Error as e:
+                raise RuntimeError(f"Erro ao gerar relatório: {e}")
+
+            finally:
+                if cursor:
+                    cursor.close()
