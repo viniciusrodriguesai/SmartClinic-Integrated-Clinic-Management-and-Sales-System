@@ -239,3 +239,5 @@ class CompraDAO:
                 raise RuntimeError(f"Erro no relatório: {e}")
             finally:
                 cur.close()
+                #Fechando cursor no finally para garantir que ele seja fechado mesmo em caso de erro.
+
