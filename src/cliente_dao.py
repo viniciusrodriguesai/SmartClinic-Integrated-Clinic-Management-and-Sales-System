@@ -26,7 +26,6 @@ class ClienteDAO:
         INSERT INTO cliente (nome, cpf, telefone, email, data_nascimento)
         VALUES (%s, %s, %s, %s, %s)
         """
-        #Abrindo conexão com o banco de dados e executando a query de inserção de um novo cliente,
         with get_conn() as conn:
             cursor = None
             try:
@@ -68,11 +67,8 @@ class ClienteDAO:
             except Error as e:
                 conn.rollback()
                 raise RuntimeError(f"Erro ao alterar cliente: {e}")
-            #Garantindo o fechamento do cursor mesmo em caso de erro
             finally:
-                #Fechando o cursor para liberar recursos, garantindo que isso aconteça mesmo se ocorrer um erro durante a execução da query
                 if cursor:
-                    #Fechando o cursor para liberar recursos, garantindo que isso aconteça mesmo se ocorrer um erro durante a execução da query
                     cursor.close()
 
     @staticmethod
@@ -84,18 +80,15 @@ class ClienteDAO:
         WHERE nome LIKE %s
         ORDER BY nome
         """
-        #Abrindo conexão com o banco de dados e executando a query de pesquisa de clientes por nome, 
-        # utilizando o operador LIKE para permitir buscas parciais
+        
         with get_conn() as conn:
             cursor = None
             try:
                 cursor = conn.cursor()
-                #Executando a query de pesquisa de clientes por nome, utilizando o operador LIKE para permitir buscas parciais
                 cursor.execute(sql, (f"%{parte_nome}%",))
 
                 resultados = cursor.fetchall()
-                #Convertendo os resultados da consulta em uma lista de objetos Cliente, 
-                # utilizando a sintaxe de unpacking para passar os valores das colunas como argumentos para o construtor do dataclass Cliente
+                
                 return [Cliente(*linha) for linha in resultados]
 
             except Error as e:
@@ -112,22 +105,19 @@ class ClienteDAO:
         DELETE FROM cliente
         WHERE id_cliente = %s
         """
-        #Abrindo conexão com o banco de dados e executando a query de remoção de cliente por ID,
+        
         with get_conn() as conn:
-            #Tratando possíveis erros durante a execução da query e garantindo o fechamento do cursor
+
             cursor = None
-            #Garantindo o fechamento do cursor mesmo em caso de erro
+        
             try:
                 cursor = conn.cursor()
-                #Executando a query de remoção de cliente por ID, 
-                # utilizando o ID do cliente como parâmetro para identificar qual registro deve ser removido
+                
                 cursor.execute(sql, (id_cliente,))
-                #Confirmando a transação para garantir que a remoção seja persistida no banco de dados
                 conn.commit()
-                #Retornando o número de linhas afetadas pela operação de remoção, 
-                # convertendo para inteiro para garantir que o valor retornado seja do tipo esperado
+               
                 return int(cursor.rowcount)
-            #
+            
             except Error as e:
                 conn.rollback()
                 raise RuntimeError(f"Erro ao remover cliente: {e}")
@@ -144,9 +134,7 @@ class ClienteDAO:
         FROM cliente
         ORDER BY nome
         """
-        #Abrindo conexão com o banco de dados e executando a query de listagem de todos os clientes
         with get_conn() as conn:
-            #Tratando possíveis erros durante a execução da query e garantindo o fechamento do cursor
             cursor = None
             try:
                 cursor = conn.cursor()
