@@ -660,61 +660,93 @@ class NovaCompraForm(tk.Toplevel):
     def __init__(self, parent, root_win, on_save):
         super().__init__(parent); self.root_win=root_win; self.on_save=on_save
         self.title("Nova Compra"); self.configure(bg=BG_PANEL)
-        self.geometry("560x680"); self.resizable(False,False); self.grab_set()
+        self.geometry("580x780"); self.resizable(False, True); self.grab_set()
+        self.minsize(580, 600)
         self.itens_carrinho = []  # [{"id_produto":x,"quantidade":y,"nome":z,"preco":w}]
         self._build()
 
     def _build(self):
-        tk.Label(self,text="Nova Compra",bg=BG_PANEL,fg=TEXT_PRI,
-                 font=("Segoe UI",15,"bold")).pack(pady=(18,4),padx=24,anchor="w")
-        tk.Frame(self,bg=BORDER,height=1).pack(fill="x",padx=24,pady=(0,6))
+        # ── Canvas com scroll vertical para garantir que os botões fiquem visíveis ──
+        canvas = tk.Canvas(self, bg=BG_PANEL, highlightthickness=0)
+        scrollbar = tk.Scrollbar(self, orient="vertical", command=canvas.yview)
+        canvas.configure(yscrollcommand=scrollbar.set)
+        scrollbar.pack(side="right", fill="y")
+        canvas.pack(side="left", fill="both", expand=True)
+
+        inner = tk.Frame(canvas, bg=BG_PANEL)
+        inner_id = canvas.create_window((0, 0), window=inner, anchor="nw")
+
+        def _on_resize(e):
+            canvas.itemconfig(inner_id, width=e.width)
+        canvas.bind("<Configure>", _on_resize)
+
+        def _on_frame_configure(e):
+            canvas.configure(scrollregion=canvas.bbox("all"))
+        inner.bind("<Configure>", _on_frame_configure)
+
+        def _on_mousewheel(e):
+            canvas.yview_scroll(int(-1 * (e.delta / 120)), "units")
+        canvas.bind_all("<MouseWheel>", _on_mousewheel)
+
+        # ── Conteúdo do formulário ──
+        tk.Label(inner, text="Nova Compra", bg=BG_PANEL, fg=TEXT_PRI,
+                 font=("Segoe UI", 15, "bold")).pack(pady=(18, 4), padx=24, anchor="w")
+        tk.Frame(inner, bg=BORDER, height=1).pack(fill="x", padx=24, pady=(0, 6))
 
         # Cliente
-        try: clientes=ClienteDAO.listar_todos()
-        except: clientes=[]
-        self.cli_opts={f"{c.id_cliente} — {c.nome}":c for c in clientes}
-        _,self.v_cli=labeled_combo(self,"Cliente *",list(self.cli_opts.keys()))
+        try: clientes = ClienteDAO.listar_todos()
+        except: clientes = []
+        self.cli_opts = {f"{c.id_cliente} — {c.nome}": c for c in clientes}
+        _, self.v_cli = labeled_combo(inner, "Cliente *", list(self.cli_opts.keys()))
 
         # Vendedor
-        try: vendedores=VendedorDAO.listar_todos()
-        except: vendedores=[]
-        self.vnd_opts={f"{v.id_vendedor} — {v.nome}":v for v in vendedores}
-        _,self.v_vnd=labeled_combo(self,"Vendedor *",list(self.vnd_opts.keys()))
+        try: vendedores = VendedorDAO.listar_todos()
+        except: vendedores = []
+        self.vnd_opts = {f"{v.id_vendedor} — {v.nome}": v for v in vendedores}
+        _, self.v_vnd = labeled_combo(inner, "Vendedor *", list(self.vnd_opts.keys()))
 
         # Forma pagamento
-        _,self.v_pag=labeled_combo(self,"Forma de Pagamento *",
-                                    ["dinheiro","cartao","boleto","pix","berries"])
+        _, self.v_pag = labeled_combo(inner, "Forma de Pagamento *",
+                                      ["dinheiro", "cartao", "boleto", "pix", "berries"])
 
-        tk.Frame(self,bg=BORDER,height=1).pack(fill="x",padx=24,pady=8)
-        tk.Label(self,text="Adicionar Produto ao Carrinho",bg=BG_PANEL,fg=TEXT_SEC,
-                 font=("Segoe UI",10,"bold")).pack(padx=24,anchor="w")
+        tk.Frame(inner, bg=BORDER, height=1).pack(fill="x", padx=24, pady=8)
+        tk.Label(inner, text="Adicionar Produto ao Carrinho", bg=BG_PANEL, fg=TEXT_SEC,
+                 font=("Segoe UI", 10, "bold")).pack(padx=24, anchor="w")
 
-        try: produtos=ProdutoDAO.listar_todos()
-        except: produtos=[]
-        self.prod_opts={f"{p.id_produto} — {p.nome} (R${p.preco:.2f} | estq:{p.quantidade})":p for p in produtos}
-        _,self.v_prod=labeled_combo(self,"Produto",list(self.prod_opts.keys()))
-        self.e_qtd=labeled_entry(self,"Quantidade","1")
+        try: produtos = ProdutoDAO.listar_todos()
+        except: produtos = []
+        self.prod_opts = {f"{p.id_produto} — {p.nome} (R${p.preco:.2f} | estq:{p.quantidade})": p for p in produtos}
+        _, self.v_prod = labeled_combo(inner, "Produto", list(self.prod_opts.keys()))
+        self.e_qtd = labeled_entry(inner, "Quantidade", "1")
 
-        styled_btn(self,"＋ Adicionar ao Carrinho",bg=ACCENT,cmd=self._add_item).pack(padx=24,pady=6,anchor="e")
+        styled_btn(inner, "＋ Adicionar ao Carrinho", bg=ACCENT,
+                   cmd=self._add_item).pack(padx=24, pady=6, anchor="e")
 
-        tk.Frame(self,bg=BORDER,height=1).pack(fill="x",padx=24)
-        tk.Label(self,text="Carrinho",bg=BG_PANEL,fg=TEXT_SEC,font=("Segoe UI",10,"bold")).pack(padx=24,anchor="w",pady=(6,0))
+        tk.Frame(inner, bg=BORDER, height=1).pack(fill="x", padx=24)
+        tk.Label(inner, text="Carrinho", bg=BG_PANEL, fg=TEXT_SEC,
+                 font=("Segoe UI", 10, "bold")).pack(padx=24, anchor="w", pady=(6, 0))
 
-        cols=("Produto","Qtd","Preço Un.","Subtotal")
-        frm,self.tv_cart=build_treeview(self,cols); frm.pack(fill="x",padx=24,pady=(4,0))
-        for col,w in zip(cols,(220,50,90,90)):
-            self.tv_cart.heading(col,text=col); self.tv_cart.column(col,width=w,anchor="center")
-        self.tv_cart.config(height=5)
+        cols = ("Produto", "Qtd", "Preço Un.", "Subtotal")
+        frm, self.tv_cart = build_treeview(inner, cols)
+        frm.pack(fill="x", padx=24, pady=(4, 0))
+        for col, w in zip(cols, (220, 50, 90, 90)):
+            self.tv_cart.heading(col, text=col)
+            self.tv_cart.column(col, width=w, anchor="center")
+        self.tv_cart.config(height=4)
 
-        bot=tk.Frame(self,bg=BG_PANEL); bot.pack(fill="x",padx=24,pady=4)
-        styled_btn(bot,"🗑 Remover Item",bg=ACCENT_RED,cmd=self._rem_item,w=16).pack(side="left")
-        self.lbl_total=tk.Label(bot,text="Total: R$ 0,00",bg=BG_PANEL,fg=ACCENT_GREEN,
-                                 font=("Segoe UI",11,"bold")); self.lbl_total.pack(side="right")
+        bot = tk.Frame(inner, bg=BG_PANEL); bot.pack(fill="x", padx=24, pady=4)
+        styled_btn(bot, "🗑 Remover Item", bg=ACCENT_RED,
+                   cmd=self._rem_item, w=16).pack(side="left")
+        self.lbl_total = tk.Label(bot, text="Total: R$ 0,00", bg=BG_PANEL, fg=ACCENT_GREEN,
+                                  font=("Segoe UI", 11, "bold"))
+        self.lbl_total.pack(side="right")
 
-        tk.Frame(self,bg=BORDER,height=1).pack(fill="x",padx=24,pady=8)
-        btns=tk.Frame(self,bg=BG_PANEL); btns.pack(fill="x",padx=24,pady=8)
-        styled_btn(btns,"✕ Cancelar",bg=BG_CARD,fg=TEXT_SEC,cmd=self.destroy).pack(side="left")
-        styled_btn(btns,"✔ Finalizar Compra",bg=ACCENT_GREEN,cmd=self._finalizar).pack(side="right")
+        tk.Frame(inner, bg=BORDER, height=1).pack(fill="x", padx=24, pady=8)
+        btns = tk.Frame(inner, bg=BG_PANEL); btns.pack(fill="x", padx=24, pady=(4, 24))
+        styled_btn(btns, "✕ Cancelar", bg=BG_CARD, fg=TEXT_SEC,
+                   cmd=self.destroy).pack(side="left")
+        styled_btn(btns, "✔ Finalizar Compra", bg=ACCENT_GREEN,
+                   cmd=self._finalizar).pack(side="right")
 
     def _add_item(self):
         key=self.v_prod.get()
