@@ -62,8 +62,28 @@ python interface/main.py
 ## 📸 Screenshots
 
 > *Coming soon — screenshots of the interface and reports*
+![SmartClinic Dashboard](screenshots/dashboard.png)
 
 ---
+## ⚙️ Installation
+
+1. **Clone the repository:**
+```bash
+git clone https://github.com/viniciusrodriguesai/SmartClinic-Integrated-Clinic-Management-and-Sales-System.git
+cd SmartClinic-Integrated-Clinic-Management-and-Sales-System
+```
+
+2. **Set up MySQL:**
+   - Create a database named `smartclinic`
+   - Run the SQL scripts in `src/` to create tables, views and stored procedures
+
+3. **Configure your connection:**
+   - Update the database credentials in the config file inside `src/`
+
+4. **Run the application:**
+```bash
+python interface/main.py
+```
 
 ## 👨‍💻 Author
 
