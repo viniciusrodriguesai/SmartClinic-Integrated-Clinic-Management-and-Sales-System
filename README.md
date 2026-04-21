@@ -59,10 +59,6 @@ python interface/main.py
 
 ---
 
-## 📸 Screenshots
-
-> *Coming soon — screenshots of the interface and reports*
-![SmartClinic Dashboard](screenshots/dashboard.png)
 
 ---
 ## ⚙️ Installation
