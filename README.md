@@ -1,5 +1,3 @@
-
-```markdown
 # SmartClinic 🏥
 
 A full-stack **Clinic Management System** built with Python and MySQL, featuring an integrated inventory and sales module. Designed to handle the complete operational workflow of a clinic — from patient registration to product sales and monthly reporting.
@@ -77,7 +75,7 @@ python interface/main.py
 ## 📄 License
 
 This project is licensed under the [MIT License](LICENSE).
-```
+
 
 ---
 
