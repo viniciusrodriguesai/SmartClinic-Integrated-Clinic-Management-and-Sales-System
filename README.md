@@ -1,97 +1,44 @@
-# SmartClinic 🏥
+# SmartClinic
 
-A full-stack **Clinic Management System** built with Python and MySQL, featuring an integrated inventory and sales module. Designed to handle the complete operational workflow of a clinic — from patient registration to product sales and monthly reporting.
+An academic desktop application for managing customers, sellers, products and purchases with Python, Tkinter and MySQL. The graphical interface and data-access classes are present; database provisioning is incomplete in this repository.
 
----
+## Local setup
 
-## 🚀 Features
+Use Python 3, MySQL and a graphical desktop with Tkinter installed. Create and activate a virtual environment, then:
 
-- **Patient Management** — Full CRUD for patient records
-- **Product & Service Catalog** — Register and manage clinic products and services
-- **Sales Module** — Process purchases with automatic discount rules and payment tracking
-- **Inventory Control** — Real-time stock updates on every transaction
-- **Financial Reports** — Monthly sales reports broken down by employee
-- **Relational Database** — Implemented with views, stored procedures, indexes and referential integrity
-
----
-
-## 🛠 Tech Stack
-
-| Layer | Technology |
-|---|---|
-| Language | Python 3 |
-| Database | MySQL |
-| Query Interface | SQL (stored procedures, views, indexes) |
-
----
-
-## 📁 Project Structure
-
-```
-SmartClinic/
-├── src/          # Core business logic and database layer
-├── interface/    # User interface module
-├── README.md
-└── .gitignore
-```
-
----
-
-## ⚙️ Installation
-
-1. **Clone the repository:**
 ```bash
-git clone https://github.com/viniciusrodriguesai/SmartClinic-Integrated-Clinic-Management-and-Sales-System.git
-cd SmartClinic-Integrated-Clinic-Management-and-Sales-System
+python -m pip install -r requirements.txt
+cp secreto.env.example secreto.env
 ```
 
-2. **Set up MySQL:**
-   - Create a database named `smartclinic`
-   - Run the SQL scripts located in `src/` to create tables, views and stored procedures
+On Windows, copy the example file using your file manager or `Copy-Item`. Edit `secreto.env` with your local database connection values. That file is ignored by Git; never commit credentials.
 
-3. **Configure your connection:**
-   - Update the database credentials in the config file inside `src/`
+The MySQL database must already exist and match the tables and columns referenced in `src/*_dao.py`. **No SQL schema, migration or reproducible database bootstrap is currently tracked**, so a fresh installation is not yet complete.
 
-4. **Run the application:**
+## Entry points
+
 ```bash
-python interface/main.py
+python interface/interface.py
 ```
 
----
+The GUI attempts to connect at startup and reports unavailable database access. A separate customer-management CLI is available:
 
-
----
-## ⚙️ Installation
-
-1. **Clone the repository:**
 ```bash
-git clone https://github.com/viniciusrodriguesai/SmartClinic-Integrated-Clinic-Management-and-Sales-System.git
-cd SmartClinic-Integrated-Clinic-Management-and-Sales-System
+python src/main.py
 ```
 
-2. **Set up MySQL:**
-   - Create a database named `smartclinic`
-   - Run the SQL scripts in `src/` to create tables, views and stored procedures
+## Organization
 
-3. **Configure your connection:**
-   - Update the database credentials in the config file inside `src/`
+- `interface/interface.py`: Tkinter GUI.
+- `src/db.py`: environment loading and connection lifecycle.
+- `src/cliente_dao.py`, `vendedor_dao.py`, `produto_dao.py`, `compra_dao.py`: database operations.
 
-4. **Run the application:**
-```bash
-python interface/main.py
-```
+## Validation and next steps
 
-## 👨‍💻 Author
+During the portfolio audit, paths and Python syntax were checked. MySQL integration and desktop interactions were not executed. This is a course project, not a verified production clinic system.
 
-**Vinicius Rodrigues** — Data Science & AI student at UFPB  
-[LinkedIn](https://linkedin.com/in/viniciusrodriguesai) · [GitHub](https://github.com/viniciusrodriguesai)
+The next engineering milestones are a versioned schema, integration tests, purchase input validation, transaction/concurrency checks and consistent monetary precision. Patient care, authentication and a clinical records system are outside the current implementation.
 
----
+## License
 
-## 📄 License
-
-This project is licensed under the [MIT License](LICENSE).
-
-
----
-
+[MIT](LICENSE).
