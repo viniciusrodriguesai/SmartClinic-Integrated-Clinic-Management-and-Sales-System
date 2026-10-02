@@ -64,3 +64,9 @@ A tracked schema, integration tests, positive-quantity validation, duplicate agg
 ## License
 
 [MIT](LICENSE).
+
+## GUI transaction regression
+
+`xvfb-run -a python -m unittest discover -s tests -v` runs the two database integration tests and one real Tk GUI flow against a dedicated database. The GUI test navigates all five pages, edits a fictional client/seller/product through form buttons, adds a cart item, finalizes a discounted purchase, checks persisted stock/payment/items and refreshes the purchase/dashboard screens. Confirmation dialogs are accepted by the test; errors fail it.
+
+Verified locally with MariaDB 10.11.14, mysql-connector-python 9.7.0, Python 3.12.14 and Tk 9. MySQL 8.4 plus Xvfb is covered by CI. This is programmatic form/event-loop coverage, not a complete manual usability assessment or a concurrency stress test. Display-less local runs skip the GUI case explicitly.
