@@ -189,7 +189,7 @@ class ClientesPage(tk.Frame):
         bar = tk.Frame(self,bg=BG_DARK); bar.pack(fill="x",padx=28,pady=10)
         sf = tk.Frame(bar,bg=BG_INPUT); sf.pack(side="left",fill="x",expand=True)
         tk.Label(sf,text="🔍",bg=BG_INPUT,fg=TEXT_SEC,font=("Segoe UI",11)).pack(side="left",padx=8)
-        self.sv = tk.StringVar(); self.sv.trace("w",self._search)
+        self.sv = tk.StringVar(); self.sv.trace_add("write",self._search)
         tk.Entry(sf,textvariable=self.sv,bg=BG_INPUT,fg=TEXT_PRI,insertbackground=ACCENT,
                  relief="flat",font=("Segoe UI",10),bd=0).pack(side="left",fill="x",expand=True,ipady=8)
         styled_btn(bar,"↺",bg=BG_CARD,fg=TEXT_SEC,cmd=self._reload,w=3).pack(side="right",padx=3)
@@ -417,7 +417,7 @@ class ProdutosPage(tk.Frame):
         bar=tk.Frame(self,bg=BG_DARK); bar.pack(fill="x",padx=28,pady=10)
         sf=tk.Frame(bar,bg=BG_INPUT); sf.pack(side="left",fill="x",expand=True)
         tk.Label(sf,text="🔍",bg=BG_INPUT,fg=TEXT_SEC,font=("Segoe UI",11)).pack(side="left",padx=8)
-        self.sv=tk.StringVar(); self.sv.trace("w",self._search)
+        self.sv=tk.StringVar(); self.sv.trace_add("write",self._search)
         tk.Entry(sf,textvariable=self.sv,bg=BG_INPUT,fg=TEXT_PRI,insertbackground=ACCENT,
                  relief="flat",font=("Segoe UI",10),bd=0).pack(side="left",fill="x",expand=True,ipady=8)
 

@@ -46,6 +46,20 @@ class CompraDAO:
         - Bloqueia se qualquer produto sem estoque suficiente
         - Status 'confirmado' para dinheiro, 'pendente' para outros
         """
+        # Validate and combine duplicate product lines before reserving stock.
+        if not itens:
+            raise ValueError("A purchase must contain at least one item")
+        quantities = {}
+        for item in itens:
+            quantity = item["quantidade"]
+            product = item["id_produto"]
+            if isinstance(quantity, bool) or not isinstance(quantity, int) or quantity <= 0:
+                raise ValueError("Quantity must be a positive integer")
+            if isinstance(product, bool) or not isinstance(product, int) or product <= 0:
+                raise ValueError("Product ID must be a positive integer")
+            quantities[product] = quantities.get(product, 0) + quantity
+        itens = [{"id_produto": product, "quantidade": quantity}
+                 for product, quantity in sorted(quantities.items())]
         # Verifica desconto
         with get_conn() as conn:
             cur = conn.cursor()
@@ -63,7 +77,7 @@ class CompraDAO:
 
                 # Verifica estoque
                 for item in itens:
-                    cur.execute("SELECT nome, quantidade FROM produto WHERE id_produto=%s",
+                    cur.execute("SELECT nome, quantidade FROM produto WHERE id_produto=%s FOR UPDATE",
                                 (item["id_produto"],))
                     prod = cur.fetchone()
                     if not prod:
@@ -111,6 +125,9 @@ class CompraDAO:
                 conn.commit()
                 return id_compra
 
+            except RuntimeError:
+                conn.rollback()
+                raise
             except Error as e:
                 conn.rollback()
                 raise RuntimeError(f"Erro ao realizar compra: {e}")

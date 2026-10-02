@@ -1,6 +1,6 @@
 # SmartClinic
 
-An academic desktop application for managing customers, sellers, products and purchases with Python, Tkinter and MySQL. The graphical interface and data-access classes are present; database provisioning is incomplete in this repository.
+An academic desktop application for managing customers, sellers, products and purchases with Python, Tkinter and MySQL. The graphical interface and data-access classes are present; a tracked database bootstrap and real MySQL-compatible integration checks are now provided.
 
 ## Local setup
 
@@ -13,7 +13,21 @@ cp secreto.env.example secreto.env
 
 On Windows, copy the example file using your file manager or `Copy-Item`. Edit `secreto.env` with your local database connection values. That file is ignored by Git; never commit credentials.
 
-The MySQL database must already exist and match the tables and columns referenced in `src/*_dao.py`. **No SQL schema, migration or reproducible database bootstrap is currently tracked**, so a fresh installation is not yet complete.
+Create an empty local MySQL database and a user with privileges on that database, then set the connection values in `secreto.env`:
+
+```sql
+CREATE DATABASE smartclinic CHARACTER SET utf8mb4;
+CREATE USER 'smartclinic'@'localhost' IDENTIFIED BY 'choose_your_own_local_password';
+GRANT ALL PRIVILEGES ON smartclinic.* TO 'smartclinic'@'localhost';
+```
+
+Apply the tracked schema and monthly report view:
+
+```bash
+python scripts/bootstrap_database.py
+```
+
+The bootstrap creates missing tables and the view; it does not drop data or migrate an incompatible old schema. Use a fresh demo database. The SQL defines the columns actually used by all four DAO classes, foreign keys, stock/price checks and timestamps.
 
 ## Entry points
 
@@ -35,9 +49,17 @@ python src/main.py
 
 ## Validation and next steps
 
-During the portfolio audit, paths and Python syntax were checked. MySQL integration and desktop interactions were not executed. This is a course project, not a verified production clinic system.
+The schema and two end-to-end database tests were run successfully against an isolated MariaDB 10.11.14 instance with mysql-connector-python 9.7.0 and Python 3.12.14. They verify a discounted purchase, stock deduction, payment confirmation and monthly report, plus rejection of insufficient stock, duplicate-item overselling, negative quantities and empty purchases. A MySQL 8 service runs these tests in CI. The Tk 9.0 GUI was launched against the isolated database in a virtual X display and closed automatically. Deprecated variable traces were migrated to trace_add for compatibility. Not every interactive workflow is verified. This remains a course project, not a production clinic system.
 
-The next engineering milestones are a versioned schema, integration tests, purchase input validation, transaction/concurrency checks and consistent monetary precision. Patient care, authentication and a clinical records system are outside the current implementation.
+For integration checks, point DB_* to a **dedicated disposable test database**, set SMARTCLINIC_TEST_DATABASE to the same database name, and run:
+
+```bash
+python -m unittest discover -s tests -v
+```
+
+The test gate refuses a database whose name was not explicitly acknowledged. Test-created rows use fictional values and are cleaned up; do not run this on real operational data.
+
+A tracked schema, integration tests, positive-quantity validation, duplicate aggregation and ordered product row locks are implemented. Remaining work includes full concurrent-worker tests, consistent decimal calculations and automated desktop interactions. Patient care, authentication and a clinical records system are outside the current implementation.
 
 ## License
 
